@@ -105,9 +105,8 @@ training = datasets.Flowers102(
 trainDataLoader = DataLoader(training, batch_size=batchSize, shuffle=True)
 
 subsetIndices = []
-for classIdx in range(len(trainingData.classes)):
-    classIndices = [idx for idx, (_, label) in enumerate(trainingData.samples) if label == classIdx]
-    subsetIndices.extend(classIndices[:5])
+for Idx in range(0, len(trainingData), int(((len(trainingData)))/20)):
+    subsetIndices.append(Idx)
 
 subsetDataset = Subset(trainingData, subsetIndices)
 
@@ -222,7 +221,7 @@ def testing(model, testDataLoader, lossFunction):
 
 
 
-epochs = 20
+epochs = 50
 
 for t in range(epochs):
 
@@ -231,7 +230,7 @@ for t in range(epochs):
     training(model=classifier, trainDataLoader=overFitDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
     
-    testing(classifier, testDataLoader, lossFunction)
+    #testing(classifier, testDataLoader, lossFunction)
 
 print("Done")
 
