@@ -7,6 +7,8 @@ from torchvision.transforms import v2
 from torchvision.transforms.v2 import ToTensor
 import scipy
 
+from torch.utils.data import Subset
+
 
 
 
@@ -55,7 +57,7 @@ validation = datasets.Flowers102(
 # print(testing)
 # print(validation)
 
-batchSize = 64
+batchSize = 256
 dropOut = 0.5
 
 trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
@@ -86,21 +88,30 @@ mean = [meanCalc,meanCalc,meanCalc]
 
 std = [stdCalc,stdCalc,stdCalc]
 
-# training = datasets.Flowers102(
-#     root = "ImageData",
-#     split = "train",
-#     download = True,
-#     transform = v2.Compose([
+training = datasets.Flowers102(
+    root = "ImageData",
+    split = "train",
+    download = True,
+    transform = v2.Compose([
     
-#         v2.Resize((224,224), antialias=True),
-#         v2.RandomHorizontalFlip(),
-#         v2.ToTensor(),
-#         v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
+        v2.Resize((224,224), antialias=True),
+        v2.RandomHorizontalFlip(),
+        v2.ToTensor(),
+        v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
 
-#     ]),
-# )
+    ]),
+)
 
-# trainDataLoader = DataLoader(training, batch_size=batchSize, shuffle=True)
+trainDataLoader = DataLoader(training, batch_size=batchSize, shuffle=True)
+
+subsetIndices = []
+for classIdx in range(len(trainingData.classes)):
+    classIndices = [idx for idx, (_, label) in enumerate(trainingData.samples) if label == classIdx]
+    subsetIndices.extend(classIndices[:5])
+
+subsetDataset = Subset(trainingData, subsetIndices)
+
+overFitDataLoader = DataLoader(subsetDataset, 4, True)
 
 
 
@@ -116,39 +127,23 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
 
             
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3),
-            nn.ReLU(),
-            
-            
-            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
+            nn.Conv2d(3, 32, 3),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
 
-            
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.ReLU(),
-
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
-            nn.ReLU(),
-
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3),
+            nn.Conv2d(32, 64, 3),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
 
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
-
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5),
+            nn.Conv2d(64, 64, 3), 
             nn.ReLU(),
 
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=5),
-            nn.ReLU(),
-                       
-
-            nn.MaxPool2d(kernel_size=4, stride=4),
-
+            nn.MaxPool2d(kernel_size=3, stride=3),
             nn.ReLU(),
 
-            
 
             nn.Flatten(),
 
@@ -158,15 +153,11 @@ class CNN(nn.Module):
 
         self.classify = nn.Sequential(
 
-            nn.Linear(in_features=(Nchannels), out_features=int(Nchannels / 64)),
-            nn.ReLU(),  
-            nn.Dropout(dropOut),
-
-            nn.Linear(in_features=int(Nchannels / 64), out_features=int(1024)),
-            nn.ReLU(),
-            nn.Dropout(dropOut),
-
-            nn.Linear(in_features=int(1024), out_features=102),
+    
+            nn.Linear(int(Nchannels), int(Nchannels/128)),
+            nn.Linear(int(Nchannels/128), int(Nchannels/1024)),
+            nn.Linear(int(Nchannels/1024), 102),
+            nn.Sigmoid()
             
            
 
@@ -184,7 +175,7 @@ class CNN(nn.Module):
     
 classifier = CNN().to("cpu")
 
-optimiser = torch.optim.SGD(classifier.parameters(), lr=1e-4)
+optimiser = Adam(classifier.parameters(), lr=(batchSize/32)*0.001, betas=(0.9, 0.999))
 
 lossFunction = nn.CrossEntropyLoss()
 
@@ -204,7 +195,7 @@ def training(model, trainDataLoader, lossFunction, optimiser):
 
         loss, current = loss.item(), batch * batchSize + len(X)
         
-        print(f"loss: {loss:>7f}  [{current:>5d}/{len(trainDataLoader):>5d}]")
+        print(f"loss: {loss:>7f}  [{current:>5d}/{len(trainDataLoader.dataset):>5d}]")
 
 def testing(model, testDataLoader, lossFunction):
     model.eval()
@@ -237,7 +228,7 @@ for t in range(epochs):
 
     print(f"Epoch {t+1}\n-------------------------------")
 
-    training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+    training(model=classifier, trainDataLoader=overFitDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
     
     testing(classifier, testDataLoader, lossFunction)
