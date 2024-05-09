@@ -176,11 +176,10 @@ class CNN(nn.Module):
     
             nn.Linear(int(Nchannels), int(Nchannels/128)),
             nn.ReLU(),
-            # nn.Linear(int(Nchannels/8), int(Nchannels/128)),
-            # nn.ReLU(),
+
             #nn.Dropout(0.5),
             nn.Linear(int(Nchannels/128), int(102)),
-            #nn.Softmax(dim=1)
+            
             
            
 
@@ -198,7 +197,7 @@ class CNN(nn.Module):
     
 classifier = CNN().to("cpu")
 
-optimiser = Adam(classifier.parameters(), lr=0.001, betas=(0.9, 0.999))
+optimiser = Adam(classifier.parameters(), lr=(batchSize/32)*0.001, betas=(0.9, 0.999))
 
 lossFunction = nn.CrossEntropyLoss()
 
@@ -253,8 +252,8 @@ for t in range(epochs):
 
     training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
-    
-    testing(classifier, testDataLoader, lossFunction)
+    if (t + 1) % 5 == 0:
+        testing(classifier, testDataLoader, lossFunction)
 
 print("Done")
 
