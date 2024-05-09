@@ -59,29 +59,29 @@ trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
 testDataLoader = DataLoader(testing, batch_size=batchSize)
 validationDataLoader = DataLoader(validation, batch_size=batchSize)
 
-def getMeanAndSTD():
-    mean = 0
-    std = 0
+# def getMeanAndSTD():
+#     mean = 0
+#     std = 0
 
-    totalImages = 0
+#     totalImages = 0
 
-    for images, _ in trainDataLoader:
-        imageBatchCount = images.size(0)
-        images = images.view(imageBatchCount, images.size(1), -1)
-        mean += images.mean(2).sum(0)
-        std += images.std(2).sum(0)
-        totalImages += imageBatchCount
+#     for images, _ in trainDataLoader:
+#         imageBatchCount = images.size(0)
+#         images = images.view(imageBatchCount, images.size(1), -1)
+#         mean += images.mean(2).sum(0)
+#         std += images.std(2).sum(0)
+#         totalImages += imageBatchCount
 
-    mean /= totalImages
-    std /= totalImages
+#     mean /= totalImages
+#     std /= totalImages
 
-    return mean, std
+#     return mean, std
 
-meanCalc, stdCalc = getMeanAndSTD()
+# meanCalc, stdCalc = getMeanAndSTD()
 
-mean = [meanCalc,meanCalc,meanCalc]
+# mean = [meanCalc,meanCalc,meanCalc]
 
-std = [stdCalc,stdCalc,stdCalc]
+# std = [stdCalc,stdCalc,stdCalc]
 
 # training = datasets.Flowers102(
 #     root = "ImageData",
@@ -137,44 +137,32 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
 
             
-            nn.Conv2d(3, 64, kernel_size=3, stride=1),
+            nn.Conv2d(3, 16, kernel_size=3, stride=1),
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.Conv2d(16, 32, 3),
             nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.MaxPool2d(kernel_size=3, stride=4),
             nn.ReLU(),
 
-            nn.Conv2d(64, 128, 3),
-            nn.ReLU(),
+            # nn.Conv2d(32, 64, 3),
+            # nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3),
-            nn.ReLU(),
+            # # nn.Conv2d(256, 512, 3),
+            # # nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.ReLU(),
+            # # nn.MaxPool2d(kernel_size=3, stride=2),
+            # # nn.ReLU(),
 
-            nn.Conv2d(128, 256, 3),
-            nn.ReLU(),
+            # # nn.Conv2d(512, 512, 3),
+            # # nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.ReLU(),
+            # nn.MaxPool2d(kernel_size=3, stride=2),
+            # nn.ReLU(),
 
-            nn.Conv2d(256, 512, 3),
-            nn.ReLU(),
-
-            nn.Conv2d(512, 512, 3),
-            nn.ReLU(),
-
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.ReLU(),
-
-            nn.Conv2d(512, 512, 3),
-            nn.ReLU(),
-
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.ReLU(),
+            # nn.MaxPool2d(kernel_size=3, stride=2),
+            # nn.ReLU(),
 
 
             nn.Flatten(),
@@ -186,14 +174,13 @@ class CNN(nn.Module):
         self.classify = nn.Sequential(
 
     
-            nn.Linear(int(Nchannels), int(Nchannels/8)),
+            nn.Linear(int(Nchannels), int(Nchannels/128)),
             nn.ReLU(),
-            nn.Linear(int(Nchannels/8), int(Nchannels/128)),
-            nn.ReLU(),
-            nn.Dropout(0.5),
+            # nn.Linear(int(Nchannels/8), int(Nchannels/128)),
+            # nn.ReLU(),
+            #nn.Dropout(0.5),
             nn.Linear(int(Nchannels/128), int(102)),
-            nn.Softmax(dim=1),
-            nn.Dropout(0.5),
+            #nn.Softmax(dim=1)
             
            
 
@@ -211,7 +198,7 @@ class CNN(nn.Module):
     
 classifier = CNN().to("cpu")
 
-optimiser = Adam(classifier.parameters(), lr=(batchSize/32)*0.001, betas=(0.9, 0.999))
+optimiser = Adam(classifier.parameters(), lr=0.001, betas=(0.9, 0.999))
 
 lossFunction = nn.CrossEntropyLoss()
 
@@ -267,7 +254,7 @@ for t in range(epochs):
     training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
     
-    #testing(classifier, testDataLoader, lossFunction)
+    testing(classifier, testDataLoader, lossFunction)
 
 print("Done")
 
