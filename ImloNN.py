@@ -7,6 +7,9 @@ from torchvision.transforms import v2
 from torchvision.transforms.v2 import ToTensor
 import scipy
 
+
+
+
 from torch.utils.data import Subset
 
 trainingData = datasets.Flowers102(
@@ -91,9 +94,9 @@ Realtraining = datasets.Flowers102(
     
         v2.RandomResizedCrop((224,224), antialias=True),
         v2.RandomHorizontalFlip(),
-        v2.RandomRotation(15),
+        v2.RandomRotation(10),
         v2.ToTensor(),
-        v2.RandomPerspective(0.3, 0.5),
+        #v2.RandomPerspective(0.3, 0.5),
         #v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
 
     ]),
@@ -110,6 +113,27 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
 
             
+            # nn.Conv2d(3, 16, kernel_size=3, stride=1),
+            # nn.ReLU(),
+
+            # nn.MaxPool2d(kernel_size=3, stride=2),
+            # nn.ReLU(),
+
+            # nn.Conv2d(16, 32, kernel_size=3, stride=1),
+            # nn.ReLU(),
+
+            # nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            # nn.ReLU(),
+
+            # nn.MaxPool2d(kernel_size=3, stride=2),
+            # nn.ReLU(),
+
+            # nn.Conv2d(32, 64, kernel_size=3, stride=1),
+            # nn.ReLU(),
+
+            # nn.MaxPool2d(kernel_size=3, stride=3),
+            # nn.ReLU(),
+
             nn.Conv2d(3, 16, kernel_size=3, stride=1),
             nn.ReLU(),
 
@@ -118,6 +142,8 @@ class CNN(nn.Module):
 
             nn.MaxPool2d(kernel_size=3, stride=4),
             nn.ReLU(),
+
+
 
             # nn.Conv2d(32, 64, 3),
             # nn.ReLU(),
@@ -149,7 +175,6 @@ class CNN(nn.Module):
     
             nn.Linear(int(Nchannels), int(Nchannels/128)),
             nn.ReLU(),
-
             #nn.Dropout(0.5),
             nn.Linear(int(Nchannels/128), int(102)),
             
@@ -213,20 +238,58 @@ def testing(model, testDataLoader, lossFunction):
 
         print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {testLoss:>8f} \n")
 
+        return (100*correct)
+
         
 
 
+def Savecheckpoint(classifier, epoch, optimiser, bestAccuraccy):
+    print("Saving....")
 
-epochs = 20
+    state = {
+        'epoch' : epoch,
+        'model' : classifier.state_dict(),
+        'BestAcc' : bestAccuraccy,
+        'optimiser' : optimiser.state_dict()
+    }
 
-for t in range(epochs):
+    torch.save(state, 'SimpleModel10epochs.pth.tar')
 
-    print(f"Epoch {t+1}\n-------------------------------")
+def Loadcheckpoint(checkpoint):
+    print("Loading...")
 
-    training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+    classifier.load_state_dict(checkpoint['stateDict'])
+    #optimiser.load(checkpoint['optimiser'])
 
-    if (t + 1) % 2 == 0:
-        testing(classifier, testDataLoader, lossFunction)
+
+# loadModel = False
+
+# if loadModel == True:
+#     Loadcheckpoint(torch.load("SimpleModelTrans.pth.tar"))
+
+#     testing(classifier, testDataLoader, lossFunction)
+
+epochs = 60
+
+# for t in range(epochs):
+
+#     bestAccuraccy = 0
+
+#     print(f"Epoch {t+1}\n-------------------------------")
+
+#     if (t + 1) % 10 == 0:
+#         checkpoint = {'stateDict' : classifier.state_dict(), 'optimiser' : optimiser.state_dict}
+#         Savecheckpoint(checkpoint)
+
+
+#     training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+
+#     if (t + 1) % 2 == 0:
+#         accuraccy = testing(classifier, validationDataLoader, lossFunction)
+
+#         if (accuraccy > bestAccuraccy):
+#             bestAccuraccy = accuraccy
+#             Savecheckpoint(classifier, (t+1), optimiser, bestAccuraccy)
 
 print("Done")
 
@@ -253,7 +316,7 @@ print("Done")
 
 # 6. Go back to add data augmentation
 
-# 7. Implement normalisation
+# 7. Implement regularization
 
 # 8. implement ways to prevent overfitting
 
