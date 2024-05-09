@@ -9,11 +9,6 @@ import scipy
 
 from torch.utils.data import Subset
 
-
-
-
-
-
 trainingData = datasets.Flowers102(
     root = "ImageData",
     split = "train",
@@ -21,7 +16,7 @@ trainingData = datasets.Flowers102(
     transform = v2.Compose([
     
         v2.Resize((224,224), antialias=True),
-        v2.RandomHorizontalFlip(),
+        #v2.RandomHorizontalFlip(),
         v2.ToTensor(),
         #v2.Normalize(torch.Tensor(mean), torch.Tensor(std))
 
@@ -57,7 +52,7 @@ validation = datasets.Flowers102(
 # print(testing)
 # print(validation)
 
-batchSize = 256
+batchSize = 64
 dropOut = 0.5
 
 trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
@@ -88,29 +83,45 @@ mean = [meanCalc,meanCalc,meanCalc]
 
 std = [stdCalc,stdCalc,stdCalc]
 
-training = datasets.Flowers102(
-    root = "ImageData",
-    split = "train",
-    download = True,
-    transform = v2.Compose([
+# training = datasets.Flowers102(
+#     root = "ImageData",
+#     split = "train",
+#     download = True,
+#     transform = v2.Compose([
     
-        v2.Resize((224,224), antialias=True),
-        v2.RandomHorizontalFlip(),
-        v2.ToTensor(),
-        v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
+#         v2.Resize((224,224), antialias=True),
+#         #v2.RandomHorizontalFlip(),
+#         v2.ToTensor(),
+#         #v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
 
-    ]),
-)
+#     ]),
+# )
 
-trainDataLoader = DataLoader(training, batch_size=batchSize, shuffle=True)
+# trainDataLoader = DataLoader(training, batch_size=batchSize, shuffle=True)
 
-subsetIndices = []
-for Idx in range(0, len(trainingData), int(((len(trainingData)))/20)):
-    subsetIndices.append(Idx)
+# fullDataset = datasets.Flowers102(
+#     root = "ImageData",
+#     download = True,
+#     transform = v2.Compose([
+    
+#         v2.Resize((224,224), antialias=True),
+#         v2.RandomHorizontalFlip(),
+#         v2.ToTensor(),
+#         v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
 
-subsetDataset = Subset(trainingData, subsetIndices)
+#     ]),
+# )
 
-overFitDataLoader = DataLoader(subsetDataset, 4, True)
+#to do tommorow: get 3 images of each class
+
+# subsetIndices = []
+# for idx in range(len(trainingData._labels)):
+#     classIndices = [idx for idx, (_, label) in enumerate(fullDataset.samples) if label == idx]
+#     subsetIndices.extend(classIndices[:5])
+
+# subsetDataset = Subset(trainingData, subsetIndices)
+
+# overFitDataLoader = DataLoader(subsetDataset, 4, True)
 
 
 
@@ -126,21 +137,43 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
 
             
-            nn.Conv2d(3, 32, 3),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(3, 64, kernel_size=3, stride=1),
             nn.ReLU(),
 
-            nn.Conv2d(32, 64, 3),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.MaxPool2d(kernel_size=3, stride=2),
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, 3), 
+            nn.Conv2d(64, 128, 3),
             nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=3, stride=3),
+            nn.Conv2d(128, 128, 3),
+            nn.ReLU(),
+
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 256, 3),
+            nn.ReLU(),
+
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.ReLU(),
+
+            nn.Conv2d(256, 512, 3),
+            nn.ReLU(),
+
+            nn.Conv2d(512, 512, 3),
+            nn.ReLU(),
+
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.ReLU(),
+
+            nn.Conv2d(512, 512, 3),
+            nn.ReLU(),
+
+            nn.MaxPool2d(kernel_size=3, stride=2),
             nn.ReLU(),
 
 
@@ -153,10 +186,14 @@ class CNN(nn.Module):
         self.classify = nn.Sequential(
 
     
-            nn.Linear(int(Nchannels), int(Nchannels/128)),
-            nn.Linear(int(Nchannels/128), int(Nchannels/1024)),
-            nn.Linear(int(Nchannels/1024), 102),
-            nn.Sigmoid()
+            nn.Linear(int(Nchannels), int(Nchannels/8)),
+            nn.ReLU(),
+            nn.Linear(int(Nchannels/8), int(Nchannels/128)),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(int(Nchannels/128), int(102)),
+            nn.Softmax(dim=1),
+            nn.Dropout(0.5),
             
            
 
@@ -221,13 +258,13 @@ def testing(model, testDataLoader, lossFunction):
 
 
 
-epochs = 50
+epochs = 10
 
 for t in range(epochs):
 
     print(f"Epoch {t+1}\n-------------------------------")
 
-    training(model=classifier, trainDataLoader=overFitDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+    training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
     
     #testing(classifier, testDataLoader, lossFunction)
