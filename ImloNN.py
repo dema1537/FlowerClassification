@@ -59,75 +59,48 @@ trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
 testDataLoader = DataLoader(testing, batch_size=batchSize)
 validationDataLoader = DataLoader(validation, batch_size=batchSize)
 
-# def getMeanAndSTD():
-#     mean = 0
-#     std = 0
+def getMeanAndSTD():
+    mean = 0
+    std = 0
 
-#     totalImages = 0
+    totalImages = 0
 
-#     for images, _ in trainDataLoader:
-#         imageBatchCount = images.size(0)
-#         images = images.view(imageBatchCount, images.size(1), -1)
-#         mean += images.mean(2).sum(0)
-#         std += images.std(2).sum(0)
-#         totalImages += imageBatchCount
+    for images, _ in trainDataLoader:
+        imageBatchCount = images.size(0)
+        images = images.view(imageBatchCount, images.size(1), -1)
+        mean += images.mean(2).sum(0)
+        std += images.std(2).sum(0)
+        totalImages += imageBatchCount
 
-#     mean /= totalImages
-#     std /= totalImages
+    mean /= totalImages
+    std /= totalImages
 
-#     return mean, std
+    return mean, std
 
-# meanCalc, stdCalc = getMeanAndSTD()
+meanCalc, stdCalc = getMeanAndSTD()
 
-# mean = [meanCalc,meanCalc,meanCalc]
+mean = [meanCalc,meanCalc,meanCalc]
 
-# std = [stdCalc,stdCalc,stdCalc]
+std = [stdCalc,stdCalc,stdCalc]
 
-# training = datasets.Flowers102(
-#     root = "ImageData",
-#     split = "train",
-#     download = True,
-#     transform = v2.Compose([
+Realtraining = datasets.Flowers102(
+    root = "ImageData",
+    split = "train",
+    download = True,
+    transform = v2.Compose([
     
-#         v2.Resize((224,224), antialias=True),
-#         #v2.RandomHorizontalFlip(),
-#         v2.ToTensor(),
-#         #v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
+        v2.RandomResizedCrop((224,224), antialias=True),
+        v2.RandomHorizontalFlip(),
+        v2.RandomRotation(15),
+        v2.ToTensor(),
+        v2.RandomPerspective(0.3, 0.5),
+        #v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
 
-#     ]),
-# )
+    ]),
+)
 
-# trainDataLoader = DataLoader(training, batch_size=batchSize, shuffle=True)
+RealtrainDataLoader = DataLoader(Realtraining, batch_size=batchSize, shuffle=True)
 
-# fullDataset = datasets.Flowers102(
-#     root = "ImageData",
-#     download = True,
-#     transform = v2.Compose([
-    
-#         v2.Resize((224,224), antialias=True),
-#         v2.RandomHorizontalFlip(),
-#         v2.ToTensor(),
-#         v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
-
-#     ]),
-# )
-
-#to do tommorow: get 3 images of each class
-
-# subsetIndices = []
-# for idx in range(len(trainingData._labels)):
-#     classIndices = [idx for idx, (_, label) in enumerate(fullDataset.samples) if label == idx]
-#     subsetIndices.extend(classIndices[:5])
-
-# subsetDataset = Subset(trainingData, subsetIndices)
-
-# overFitDataLoader = DataLoader(subsetDataset, 4, True)
-
-
-
-# trainDataset = datasets.ImageFolder(root = "./ImageData", transform=)
-# testDataLoader = DataLoader(testing, batch_size=64)
-# validationDataLoader = DataLoader(validation, batch_size=64)
 
 class CNN(nn.Module):
     
@@ -240,19 +213,19 @@ def testing(model, testDataLoader, lossFunction):
 
         print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {testLoss:>8f} \n")
 
-        lossFunction = nn.CrossEntropyLoss()
+        
 
 
 
-epochs = 10
+epochs = 20
 
 for t in range(epochs):
 
     print(f"Epoch {t+1}\n-------------------------------")
 
-    training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+    training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
-    if (t + 1) % 5 == 0:
+    if (t + 1) % 2 == 0:
         testing(classifier, testDataLoader, lossFunction)
 
 print("Done")
