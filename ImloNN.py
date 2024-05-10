@@ -55,7 +55,7 @@ validation = datasets.Flowers102(
 # print(testing)
 # print(validation)
 
-batchSize = 64
+batchSize = 32
 dropOut = 0.5
 
 trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
@@ -253,34 +253,35 @@ def Savecheckpoint(classifier, epoch, optimiser, bestAccuraccy):
         'optimiser' : optimiser.state_dict()
     }
 
-    torch.save(state, 'SimpleModel10epochs.pth.tar')
+    torch.save(state, 'SimpleModeltests.pth.tar')
 
 def Loadcheckpoint(checkpoint):
     print("Loading...")
 
-    classifier.load_state_dict(checkpoint['stateDict'])
+    classifier.load_state_dict(checkpoint['model'])
     #optimiser.load(checkpoint['optimiser'])
 
 
-# loadModel = False
+loadModel = True
 
-# if loadModel == True:
-#     Loadcheckpoint(torch.load("SimpleModelTrans.pth.tar"))
+if loadModel == True:
+    Loadcheckpoint(torch.load("SimpleModel370.pth.tar"))
 
-#     testing(classifier, testDataLoader, lossFunction)
+    print("Testing...")
 
-epochs = 60
+    testing(classifier, testDataLoader, lossFunction)
+
+epochs = 370
+
+bestAccuraccy = 0
 
 # for t in range(epochs):
 
-#     bestAccuraccy = 0
+    
 
 #     print(f"Epoch {t+1}\n-------------------------------")
 
-#     if (t + 1) % 10 == 0:
-#         checkpoint = {'stateDict' : classifier.state_dict(), 'optimiser' : optimiser.state_dict}
-#         Savecheckpoint(checkpoint)
-
+    
 
 #     training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
@@ -293,7 +294,12 @@ epochs = 60
 
 print("Done")
 
+#Approx 13mins for 10 epochs
+#1.3 mins per epoch
+#8 * 60 = 480
+#~370 epochs in 8 hrs
 
+#last 10 epochs: 16mins 15
 
 ##Removed dropout in convolutional layers, increased dropout to 0.5, reduced strides to 1 for all max pooling.
 ##Added to more conv layers, and reduced output sizes for existing ones
