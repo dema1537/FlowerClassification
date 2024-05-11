@@ -135,6 +135,9 @@ class CNN(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=4),
             nn.ReLU(),
 
+            nn.Conv2d(32, 32, 3),
+            nn.ReLU(),
+
             
 
             nn.Flatten(),
