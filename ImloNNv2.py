@@ -7,8 +7,14 @@ from torchvision.transforms import v2
 from torchvision.transforms.v2 import ToTensor
 import scipy
 
+device = "cpu"
 
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)} is available.")
+    device = "cuda"
 
+else:
+    print("No GPU available. Training will run on CPU.")
 
 
 
@@ -176,7 +182,7 @@ class CNN(nn.Module):
 
         
     
-classifier = CNN().to("cuda")
+classifier = CNN().to(device)
 
 optimiser = Adam(classifier.parameters(), lr=1e-4)
 
@@ -189,7 +195,8 @@ def training(model, trainDataLoader, lossFunction, optimiser):
 
     for batch, (X,y) in enumerate(trainDataLoader):
 
-        X,y = X.cuda(), y.cuda()
+        if device == "cuda":
+            X,y = X.cuda(), y.cuda()
 
         prediction = model(X)
         loss = lossFunction(prediction, y)
@@ -215,7 +222,11 @@ def testing(model, testDataLoader, lossFunction):
     with torch.no_grad():
 
         for X, y in testDataLoader:
-            X, y = X.cuda(), y.cuda()
+
+            if device == "cuda":
+                X,y = X.cuda(), y.cuda()
+
+
             prediction = model(X)
             testLoss += lossFunction(prediction, y).item()
             correct += (prediction.argmax(1) == y).type(torch.float).sum().item()
