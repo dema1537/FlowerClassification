@@ -124,9 +124,11 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
 
             nn.Conv2d(3, 16, kernel_size=3, stride=1),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
 
             nn.Conv2d(16, 32, 3),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
 
             nn.Conv2d(32, 32, 3),
@@ -136,6 +138,7 @@ class CNN(nn.Module):
             nn.ReLU(),
 
             nn.Conv2d(32, 32, 3),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
 
             
