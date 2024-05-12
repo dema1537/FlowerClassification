@@ -353,7 +353,7 @@ def testing(model, testDataLoader, lossFunction):
 
 # print(checkpoint['BestAcc'])
 
-epochs = 150
+epochs = 15
 
 
 for t in range(epochs):
