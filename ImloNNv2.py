@@ -54,8 +54,9 @@ validation = datasets.Flowers102(
     split = "val",
     download = True,
         transform = v2.Compose([
-        v2.ToTensor(),
+
         v2.Resize((224,224), antialias=True),
+        v2.ToTensor(),
 
     ]),
 )
@@ -99,12 +100,13 @@ Realtraining = datasets.Flowers102(
 
         v2.Resize((224,224), antialias=True),
         v2.RandomHorizontalFlip(),
-        #v2.RandomRotation(10),
-        #v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
-        #v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
+        v2.RandomRotation(45),
+        v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
+        v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
         v2.RandomAdjustSharpness(sharpness_factor=2),
+        v2.ElasticTransform(alpha=25.0),
         v2.ToTensor(),
-        #v2.RandomPerspective(0.3, 0.5),
+        v2.RandomPerspective(0.1, 0.5),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     ]),
@@ -115,8 +117,9 @@ Realvalidation = datasets.Flowers102(
     split = "val",
     download = True,
         transform = v2.Compose([
-        v2.ToTensor(),
         v2.Resize((224,224), antialias=True),
+
+        v2.ToTensor(),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     ]),
@@ -125,16 +128,16 @@ Realvalidation = datasets.Flowers102(
 RealtrainDataLoader = DataLoader(Realtraining, batch_size=batchSize, shuffle=True)
 RealvalidationDataLoader = DataLoader(Realvalidation, batch_size=batchSize, shuffle=True)
 
-# for x,y in RealtrainDataLoader:
-#   x = x.to(device)
-#   fig, ax = plt.subplots(nrows=2, ncols=4, figsize=(12,8))
-#   for i in range(2):
-#     for j in range(4):
-#       ax[i,j].imshow(x[i*4+j].cpu().permute(1,2,0))
-#       ax[i,j].axis('off')
-#   break
+for x,y in RealtrainDataLoader:
+  x = x.to(device)
+  fig, ax = plt.subplots(nrows=2, ncols=4, figsize=(12,8))
+  for i in range(2):
+    for j in range(4):
+      ax[i,j].imshow(x[i*4+j].cpu().permute(1,2,0))
+      ax[i,j].axis('off')
+  break
 
-# plt.show()
+plt.show()
 
 class CNN(nn.Module):
 
@@ -142,8 +145,8 @@ class CNN(nn.Module):
         super().__init__()
 
         self.feature = nn.Sequential(
-            
-                                     
+
+
             nn.Conv2d(3, 16, kernel_size=3, stride=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
@@ -184,13 +187,13 @@ class CNN(nn.Module):
         print(Nchannels)
 
         self.classify = nn.Sequential(
-            
-                                      
+
+
             nn.Linear(int(Nchannels), int(Nchannels/128)),
             nn.ReLU(),
             nn.Dropout(0.25),
             nn.Linear(int(Nchannels/128), int(102)),
-            
+
         )
 
 
@@ -235,7 +238,7 @@ def training(model, trainDataLoader, lossFunction, optimiser):
 
         loss, current = loss.item(), batch * batchSize + len(X)
 
-        
+
 
         print(f"loss: {loss:>7f}  [{current:>5d}/{len(trainDataLoader.dataset):>5d}]")
 
@@ -277,18 +280,18 @@ def testing(model, testDataLoader, lossFunction):
 
         accu = 30
 
-        if ((100 * correct) > accu) & ((100 * correct) > 35):
-            bestAcc = (100 * correct)
-            print("Saving....")
+        # if ((100 * correct) > accu) & ((100 * correct) > 35):
+        #     accu = (100 * correct)
+        #     print("Saving....")
 
-            state = {
-                'epoch' : t,
-                'model' : classifier.state_dict(),
-                'BestAcc' : bestAcc,
-                'optimiser' : optimiser.state_dict(),
-            }
+        #     state = {
+        #         'epoch' : t,
+        #         'model' : classifier.state_dict(),
+        #         'BestAcc' : bestAcc,
+        #         'optimiser' : optimiser.state_dict(),
+        #     }
 
-            torch.save(state, '30epochRun2.pth.tar')
+        #     torch.save(state, '30epochRun2.pth.tar')
 
 # checkpoint = torch.load('30epochRun.pth.tar')
 
@@ -301,10 +304,10 @@ for t in range(epochs):
 
     print(f"Epoch {t+1}\n-------------------------------")
 
-    training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+    training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
 
-    testing(classifier, validationDataLoader, lossFunction)
+    testing(classifier, RealvalidationDataLoader, lossFunction)
 
 print("Done")
 
