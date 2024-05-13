@@ -6,6 +6,7 @@ from torchvision import datasets
 from torchvision.transforms import v2
 from torchvision.transforms.v2 import ToTensor
 import scipy
+import matplotlib.pyplot as plt
 
 
 
@@ -63,7 +64,7 @@ validation = datasets.Flowers102(
 # print(testing)
 # print(validation)
 
-batchSize = 128
+batchSize = 64
 dropOut = 0.5
 
 trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
@@ -96,15 +97,15 @@ Realtraining = datasets.Flowers102(
     download = True,
     transform = v2.Compose([
 
-        v2.RandomResizedCrop((224,224), antialias=True),
+        v2.Resize((224,224), antialias=True),
         v2.RandomHorizontalFlip(),
         #v2.RandomRotation(10),
-        v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
-        v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
+        #v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
+        #v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
         v2.RandomAdjustSharpness(sharpness_factor=2),
         v2.ToTensor(),
         #v2.RandomPerspective(0.3, 0.5),
-        v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
+        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     ]),
 )
@@ -116,13 +117,24 @@ Realvalidation = datasets.Flowers102(
         transform = v2.Compose([
         v2.ToTensor(),
         v2.Resize((224,224), antialias=True),
-        v2.Normalize(torch.Tensor(meanCalc), torch.Tensor(stdCalc))
+        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     ]),
 )
 
 RealtrainDataLoader = DataLoader(Realtraining, batch_size=batchSize, shuffle=True)
 RealvalidationDataLoader = DataLoader(Realvalidation, batch_size=batchSize, shuffle=True)
+
+# for x,y in RealtrainDataLoader:
+#   x = x.to(device)
+#   fig, ax = plt.subplots(nrows=2, ncols=4, figsize=(12,8))
+#   for i in range(2):
+#     for j in range(4):
+#       ax[i,j].imshow(x[i*4+j].cpu().permute(1,2,0))
+#       ax[i,j].axis('off')
+#   break
+
+# plt.show()
 
 class CNN(nn.Module):
 
@@ -132,94 +144,39 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
             
                                      
-            nn.Conv2d(3, 8, kernel_size=3, stride=1),
-            #nn.BatchNorm2d(16),
-            
+            nn.Conv2d(3, 16, kernel_size=3, stride=1),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
-
-            nn.Conv2d(8, 16, 3),
-            nn.ReLU(),
-
-            nn.MaxPool2d(kernel_size=3, stride=3),
-            nn.ReLU(),
-
-            # nn.Conv2d(32, 32, 3),
-            # nn.ReLU(),
-
-            # nn.MaxPool2d(kernel_size=3, stride=4),
-            # nn.ReLU(),
 
             nn.Conv2d(16, 32, 3),
-            nn.ReLU(),
-
-            nn.MaxPool2d(kernel_size=3, stride=3),
-            nn.ReLU(),
-
-            nn.Conv2d(32, 64, 5),
-            nn.ReLU(),
-
-            nn.MaxPool2d(kernel_size=3, stride=3),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
 
             # nn.Conv2d(64, 128, 3),
             # nn.ReLU(),
 
-            # nn.MaxPool2d(kernel_size=3, stride=2),
-            # nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 32, 3),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
 
             # nn.Conv2d(128, 256, 3),
             # nn.ReLU(),
 
-            # nn.MaxPool2d(kernel_size=3, stride=2),
+
+
+
+            # nn.Conv2d(256, 512, 3),
             # nn.ReLU(),
 
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU(),
 
             nn.Flatten(),
             nn.Dropout(0.25)
 
-            # nn.Conv2d(3, 16, kernel_size=3, stride=1),
-            # nn.BatchNorm2d(16),
-            # nn.ReLU(),
-
-            # # nn.Conv2d(16, 16, 3),
-            # # nn.BatchNorm2d(16),
-            # # nn.ReLU(),
-
-            # nn.Conv2d(16, 32, 3),
-            # nn.BatchNorm2d(32),
-            # nn.ReLU(),
-
-            # nn.MaxPool2d(kernel_size=2, stride=2),
-            # nn.ReLU(),
-
-            # nn.Conv2d(32, 64, 3),
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-
-            # nn.MaxPool2d(kernel_size=3, stride=4),
-            # nn.ReLU(),
-
-
-            # # nn.Conv2d(64, 128, 3),
-            # # nn.BatchNorm2d(128),
-            # # nn.ReLU(),
-
-            # # nn.MaxPool2d(kernel_size=3, stride=2),
-            # # nn.ReLU(),
-
-            # # nn.Conv2d(128, 256, 3),
-            # # nn.BatchNorm2d(256),
-            # # nn.ReLU(),
-
-            # # # nn.Conv2d(128, 256, 3),
-            # # # nn.BatchNorm2d(256),
-            # # # nn.ReLU(),
-
-            # # nn.MaxPool2d(kernel_size=3, stride=2),
-            # # nn.ReLU(),
-
-            # nn.Flatten(),
-            # nn.Dropout(0.25)
 
         )
 
@@ -229,33 +186,11 @@ class CNN(nn.Module):
         self.classify = nn.Sequential(
             
                                       
-         
-            nn.Linear(int(Nchannels), int(Nchannels)),
-
+            nn.Linear(int(Nchannels), int(Nchannels/128)),
+            nn.ReLU(),
             nn.Dropout(0.25),
-            nn.ReLU(),
-
-            nn.Linear(int(Nchannels), int(Nchannels)),
-
-            nn.Dropout(0.35),
-            nn.ReLU(),
-  
-            nn.Linear(int(Nchannels), int(102)),
+            nn.Linear(int(Nchannels/128), int(102)),
             
-
-            # nn.Linear(int(Nchannels), int(Nchannels/128)),
-            # nn.ReLU(),
-            # nn.Dropout(0.25),
-
-
-            # # nn.Linear(int(Nchannels/128), int(Nchannels/128)),
-            # # nn.ReLU(),
-            # # nn.Dropout(0.5),
-
-
-            # nn.Linear(int(Nchannels/128), int(102)),
-
-
         )
 
 
@@ -270,12 +205,14 @@ class CNN(nn.Module):
 
 classifier = CNN().to(device)
 
-
-
-
-optimiser = Adam(classifier.parameters(), lr=1e-3, weight_decay=1e-3)
-
 lossFunction = nn.CrossEntropyLoss()
+
+
+optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-3)
+
+#optimiser = torch.optim.SGD(classifier.parameters(), lr=1e-2, weight_decay=1e-3)
+
+
 
 
 def training(model, trainDataLoader, lossFunction, optimiser):
@@ -295,9 +232,14 @@ def training(model, trainDataLoader, lossFunction, optimiser):
         optimiser.step()
 
 
+
         loss, current = loss.item(), batch * batchSize + len(X)
 
+        
+
         print(f"loss: {loss:>7f}  [{current:>5d}/{len(trainDataLoader.dataset):>5d}]")
+
+
 
 bestAcc = 1
 
@@ -327,7 +269,6 @@ def testing(model, testDataLoader, lossFunction):
 
         print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {testLoss:>8f} \n")
 
-        lossFunction = nn.CrossEntropyLoss()
 
 
 # checkpoint = torch.load('30epochRun.pth.tar')
@@ -353,17 +294,17 @@ def testing(model, testDataLoader, lossFunction):
 
 # print(checkpoint['BestAcc'])
 
-epochs = 15
+epochs = 60
 
 
 for t in range(epochs):
 
     print(f"Epoch {t+1}\n-------------------------------")
 
-    training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
+    training(model=classifier, trainDataLoader=trainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
 
-    testing(classifier, RealvalidationDataLoader, lossFunction)
+    testing(classifier, validationDataLoader, lossFunction)
 
 print("Done")
 
