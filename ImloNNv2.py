@@ -100,9 +100,11 @@ Realtraining = datasets.Flowers102(
 
         v2.Resize((224,224), antialias=True),
         v2.RandomHorizontalFlip(),
+       
+        #v2.RandomVerticalFlip(),
         v2.RandomRotation(45),
-        v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
-        v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
+        # v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
+        # v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
         v2.RandomAdjustSharpness(sharpness_factor=2),
         v2.ElasticTransform(alpha=25.0),
         v2.ToTensor(),
@@ -155,13 +157,14 @@ class CNN(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
 
-            # nn.Conv2d(64, 128, 3),
-            # nn.ReLU(),
+            nn.Conv2d(32, 64, 3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
 
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
-            nn.Conv2d(32, 32, 3),
+            nn.Conv2d(64, 32, 3),
             nn.BatchNorm2d(32),
             nn.ReLU(),
 
@@ -211,7 +214,7 @@ classifier = CNN().to(device)
 lossFunction = nn.CrossEntropyLoss()
 
 
-optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-3)
+optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-2)
 
 #optimiser = torch.optim.SGD(classifier.parameters(), lr=1e-2, weight_decay=1e-3)
 
