@@ -218,12 +218,12 @@ class CNN(nn.Module):
 
             nn.Linear(int(Nchannels * 2), int(Nchannels/8)),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
 
 
             nn.Linear(int(Nchannels/8), int(Nchannels/8)),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
 
             nn.Linear(int(Nchannels/8), int(102)),
 
