@@ -130,14 +130,14 @@ Realvalidation = datasets.Flowers102(
 RealtrainDataLoader = DataLoader(Realtraining, batch_size=batchSize, shuffle=True)
 RealvalidationDataLoader = DataLoader(Realvalidation, batch_size=batchSize, shuffle=True)
 
-for x,y in RealtrainDataLoader:
-  x = x.to(device)
-  fig, ax = plt.subplots(nrows=2, ncols=4, figsize=(12,8))
-  for i in range(2):
-    for j in range(4):
-      ax[i,j].imshow(x[i*4+j].cpu().permute(1,2,0))
-      ax[i,j].axis('off')
-  break
+# for x,y in RealtrainDataLoader:
+#   x = x.to(device)
+#   fig, ax = plt.subplots(nrows=2, ncols=4, figsize=(12,8))
+#   for i in range(2):
+#     for j in range(4):
+#       ax[i,j].imshow(x[i*4+j].cpu().permute(1,2,0))
+#       ax[i,j].axis('off')
+#   break
 
 plt.show()
 
@@ -145,7 +145,6 @@ class CNN(nn.Module):
 
     def __init__(self):
         super().__init__()
-
         self.feature = nn.Sequential(
 
 
@@ -153,35 +152,55 @@ class CNN(nn.Module):
             nn.BatchNorm2d(16),
             nn.ReLU(),
 
+            
+
+            #874,496 224
+
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU(),
+
+            #112
+
             nn.Conv2d(16, 32, 3),
             nn.BatchNorm2d(32),
             nn.ReLU(),
+
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU(),
+
+            #401,408 112
 
             nn.Conv2d(32, 64, 3),
             nn.BatchNorm2d(64),
             nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=2, stride=3),
+            
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
-            nn.Conv2d(64, 32, 3),
-            nn.BatchNorm2d(32),
+            #200,704 56
+
+
+            nn.Conv2d(64, 128, 3),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
 
-            # nn.Conv2d(128, 256, 3),
-            # nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU(),
+            #401,408 56
+
+            nn.Conv2d(128, 256, 3),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
 
 
-
-
-            # nn.Conv2d(256, 512, 3),
-            # nn.ReLU(),
+            #200,704 56
 
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
             nn.Flatten(),
-            #nn.Dropout(0.5)
+           # nn.Dropout(0.25)
 
 
         )
@@ -194,16 +213,22 @@ class CNN(nn.Module):
 
             nn.Linear(int(Nchannels), int(Nchannels * 2)),
             nn.ReLU(),
-            #nn.Dropout(0.5),
-
-            # nn.Linear(int(Nchannels * 2), int(Nchannels)),
-            # nn.ReLU(),
-            # nn.Dropout(0.5),
+            nn.Dropout(0.2),
 
 
-            nn.Linear(int(Nchannels * 2), int(102)),
+            nn.Linear(int(Nchannels * 2), int(Nchannels/8)),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+
+
+            nn.Linear(int(Nchannels/8), int(Nchannels/8)),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+
+            nn.Linear(int(Nchannels/8), int(102)),
 
         )
+
 
 
 
@@ -220,9 +245,17 @@ classifier = CNN().to(device)
 lossFunction = nn.CrossEntropyLoss()
 
 
-optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-2)
+optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-3)
 
 #optimiser = torch.optim.SGD(classifier.parameters(), lr=1e-2, weight_decay=1e-3)
+
+state = {
+                'epoch' : 0,
+                'model' : classifier.state_dict(),
+                'BestAcc' : 6,
+                'optimiser' : optimiser.state_dict(),
+            }
+torch.save(state, 'NNsavedModel1.pth.tar')
 
 
 
@@ -253,7 +286,6 @@ def training(model, trainDataLoader, lossFunction, optimiser):
 
 
 
-bestAcc = 1
 
 def testing(model, testDataLoader, lossFunction):
     model.eval()
@@ -283,28 +315,28 @@ def testing(model, testDataLoader, lossFunction):
 
 
 
-# checkpoint = torch.load('30epochRun.pth.tar')
+        checkpoint = torch.load('NNsavedModel.pth.tar')
 
-#         accu = (checkpoint['BestAcc'])
+        accu = (checkpoint['BestAcc'])
 
-        accu = 30
+        
 
-        # if ((100 * correct) > accu) & ((100 * correct) > 35):
-        #     accu = (100 * correct)
-        #     print("Saving....")
+        if ((100 * correct) > accu) & ((100 * correct) > 3):
+            accu = (100 * correct)
+            print("Saving....")
 
-        #     state = {
-        #         'epoch' : t,
-        #         'model' : classifier.state_dict(),
-        #         'BestAcc' : bestAcc,
-        #         'optimiser' : optimiser.state_dict(),
-        #     }
+            state = {
+                'epoch' : t,
+                'model' : classifier.state_dict(),
+                'BestAcc' : accu,
+                'optimiser' : optimiser.state_dict(),
+            }
 
-        #     torch.save(state, '30epochRun2.pth.tar')
+            torch.save(state, 'NNsavedModel.pth.tar')
 
-# checkpoint = torch.load('30epochRun.pth.tar')
+            checkpoint = torch.load('NNsavedModel.pth.tar')
 
-# print(checkpoint['BestAcc'])
+            print(checkpoint['BestAcc'])
 
 epochs = 60
 
