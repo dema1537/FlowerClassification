@@ -161,7 +161,7 @@ class CNN(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(),
 
-            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.MaxPool2d(kernel_size=2, stride=3),
             nn.ReLU(),
 
             nn.Conv2d(64, 32, 3),
@@ -181,7 +181,7 @@ class CNN(nn.Module):
             nn.ReLU(),
 
             nn.Flatten(),
-            nn.Dropout(0.25)
+            #nn.Dropout(0.5)
 
 
         )
@@ -192,10 +192,16 @@ class CNN(nn.Module):
         self.classify = nn.Sequential(
 
 
-            nn.Linear(int(Nchannels), int(Nchannels/128)),
+            nn.Linear(int(Nchannels), int(Nchannels * 2)),
             nn.ReLU(),
-            nn.Dropout(0.25),
-            nn.Linear(int(Nchannels/128), int(102)),
+            #nn.Dropout(0.5),
+
+            # nn.Linear(int(Nchannels * 2), int(Nchannels)),
+            # nn.ReLU(),
+            # nn.Dropout(0.5),
+
+
+            nn.Linear(int(Nchannels * 2), int(102)),
 
         )
 
@@ -313,4 +319,3 @@ for t in range(epochs):
     testing(classifier, RealvalidationDataLoader, lossFunction)
 
 print("Done")
-
