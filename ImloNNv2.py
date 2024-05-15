@@ -21,19 +21,19 @@ else:
 
 
 
-trainingData = datasets.Flowers102(
-    root = "ImageData",
-    split = "train",
-    download = True,
-    transform = v2.Compose([
+# trainingData = datasets.Flowers102(
+#     root = "ImageData",
+#     split = "train",
+#     download = True,
+#     transform = v2.Compose([
 
-        v2.Resize((224,224), antialias=True),
-        v2.RandomHorizontalFlip(),
-        v2.ToTensor(),
-        #v2.Normalize(torch.Tensor(mean), torch.Tensor(std))
+#         v2.Resize((224,224), antialias=True),
+#         v2.RandomHorizontalFlip(),
+#         v2.ToTensor(),
+#         #v2.Normalize(torch.Tensor(mean), torch.Tensor(std))
 
-    ]),
-)
+#     ]),
+# )
 
 
 testing = datasets.Flowers102(
@@ -44,22 +44,21 @@ testing = datasets.Flowers102(
 
         v2.Resize((224,224), antialias=True),
         v2.ToTensor(),
-        #v2.Normalize(torch.Tensor(mean), torch.Tensor(std)),
-
+        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ]),
 )
 
-validation = datasets.Flowers102(
-    root = "ImageData",
-    split = "val",
-    download = True,
-        transform = v2.Compose([
+# validation = datasets.Flowers102(
+#     root = "ImageData",
+#     split = "val",
+#     download = True,
+#         transform = v2.Compose([
 
-        v2.Resize((224,224), antialias=True),
-        v2.ToTensor(),
+#         v2.Resize((224,224), antialias=True),
+#         v2.ToTensor(),
 
-    ]),
-)
+#     ]),
+# )
 
 # print(testing)
 # print(testing)
@@ -68,28 +67,28 @@ validation = datasets.Flowers102(
 batchSize = 64
 dropOut = 0.5
 
-trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
-testDataLoader = DataLoader(testing, batch_size=batchSize)
-validationDataLoader = DataLoader(validation, batch_size=batchSize)
-def getMeanAndSTD():
-    mean = 0
-    std = 0
+#trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
+testingDataLoader = DataLoader(testing, batch_size=batchSize)
+#validationDataLoader = DataLoader(validation, batch_size=batchSize)
+# def getMeanAndSTD():
+#     mean = 0
+#     std = 0
 
-    totalImages = 0
+#     totalImages = 0
 
-    for images, _ in trainDataLoader:
-        imageBatchCount = images.size(0)
-        images = images.view(imageBatchCount, images.size(1), -1)
-        mean += images.mean(2).sum(0)
-        std += images.std(2).sum(0)
-        totalImages += imageBatchCount
+#     for images, _ in trainDataLoader:
+#         imageBatchCount = images.size(0)
+#         images = images.view(imageBatchCount, images.size(1), -1)
+#         mean += images.mean(2).sum(0)
+#         std += images.std(2).sum(0)
+#         totalImages += imageBatchCount
 
-    mean /= totalImages
-    std /= totalImages
+#     mean /= totalImages
+#     std /= totalImages
 
-    return mean, std
+#     return mean, std
 
-meanCalc, stdCalc = getMeanAndSTD()
+# meanCalc, stdCalc = getMeanAndSTD()
 
 
 Realtraining = datasets.Flowers102(
@@ -139,7 +138,7 @@ RealvalidationDataLoader = DataLoader(Realvalidation, batch_size=batchSize, shuf
 #       ax[i,j].axis('off')
 #   break
 
-plt.show()
+# plt.show()
 
 class CNN(nn.Module):
 
@@ -255,7 +254,7 @@ state = {
                 'BestAcc' : 6,
                 'optimiser' : optimiser.state_dict(),
             }
-torch.save(state, 'NNsavedModel1.pth.tar')
+torch.save(state, 'VikingNNsavedModel.pth.tar')
 
 
 
@@ -287,7 +286,7 @@ def training(model, trainDataLoader, lossFunction, optimiser):
 
 
 
-def testing(model, testDataLoader, lossFunction):
+def validating(model, testDataLoader, lossFunction):
     model.eval()
 
     size = len(testDataLoader.dataset)
@@ -315,7 +314,7 @@ def testing(model, testDataLoader, lossFunction):
 
 
 
-        checkpoint = torch.load('NNsavedModel.pth.tar')
+        checkpoint = torch.load('VikingNNsavedModel.pth.tar')
 
         accu = (checkpoint['BestAcc'])
 
@@ -332,13 +331,15 @@ def testing(model, testDataLoader, lossFunction):
                 'optimiser' : optimiser.state_dict(),
             }
 
-            torch.save(state, 'NNsavedModel.pth.tar')
+            torch.save(state, 'VikingNNsavedModel.pth.tar')
 
-            checkpoint = torch.load('NNsavedModel.pth.tar')
+            checkpoint = torch.load('VikingNNsavedModel.pth.tar')
 
             print(checkpoint['BestAcc'])
 
-epochs = 60
+epochs = 2
+
+
 
 
 for t in range(epochs):
@@ -348,6 +349,41 @@ for t in range(epochs):
     training(model=classifier, trainDataLoader=RealtrainDataLoader, lossFunction=lossFunction, optimiser=optimiser)
 
 
-    testing(classifier, RealvalidationDataLoader, lossFunction)
+    validating(classifier, RealvalidationDataLoader, lossFunction)
+
+print("Done Training")
+
+print("\n-\n-\n-\n-\n-\n-\n")
+
+print("Commencing testing with testing data loader")
+
+
+def testing(model, testDataLoader, lossFunction):
+    model.eval()
+
+    size = len(testDataLoader.dataset)
+    numberOfBatches = len(testDataLoader)
+
+    testLoss = 0
+    correct = 0
+
+    with torch.no_grad():
+
+        for X, y in testDataLoader:
+
+            if device == "cuda":
+                X,y = X.cuda(), y.cuda()
+
+
+            prediction = model(X)
+            testLoss += lossFunction(prediction, y).item()
+            correct += (prediction.argmax(1) == y).type(torch.float).sum().item()
+
+        testLoss /= numberOfBatches
+        correct /= size
+
+        print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {testLoss:>8f} \n")
+
+testing(classifier, testingDataLoader, lossFunction)
 
 print("Done")
