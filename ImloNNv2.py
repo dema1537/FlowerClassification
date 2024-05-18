@@ -7,6 +7,7 @@ from torchvision.transforms import v2
 from torchvision.transforms.v2 import ToTensor
 import scipy
 import matplotlib.pyplot as plt
+import time
 
 
 
@@ -127,7 +128,7 @@ Realvalidation = datasets.Flowers102(
 )
 
 RealtrainDataLoader = DataLoader(Realtraining, batch_size=batchSize, shuffle=True)
-RealvalidationDataLoader = DataLoader(Realvalidation, batch_size=batchSize, shuffle=True)
+RealvalidationDataLoader = DataLoader(Realvalidation, batch_size=batchSize, shuffle=False)
 
 # for x,y in RealtrainDataLoader:
 #   x = x.to(device)
@@ -251,7 +252,7 @@ optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-3)
 state = {
                 'epoch' : 0,
                 'model' : classifier.state_dict(),
-                'BestAcc' : 6,
+                'BestAcc' : 0,
                 'optimiser' : optimiser.state_dict(),
             }
 torch.save(state, 'VikingNNsavedModel.pth.tar')
@@ -320,7 +321,7 @@ def validating(model, testDataLoader, lossFunction):
 
         
 
-        if ((100 * correct) > accu) & ((100 * correct) > 3):
+        if ((100 * correct) > accu) & ((100 * correct) > 40):
             accu = (100 * correct)
             print("Saving....")
 
@@ -337,12 +338,20 @@ def validating(model, testDataLoader, lossFunction):
 
             print(checkpoint['BestAcc'])
 
-epochs = 2
+epochs = 1000
 
+startTime = time.time()
+runningTime = 11 * 60 * 60
 
 
 
 for t in range(epochs):
+
+    timeSoFar = time.time() - startTime
+
+    if timeSoFar > runningTime:
+        print("Time up, exiting training")
+        break
 
     print(f"Epoch {t+1}\n-------------------------------")
 
@@ -356,6 +365,14 @@ print("Done Training")
 print("\n-\n-\n-\n-\n-\n-\n")
 
 print("Commencing testing with testing data loader")
+
+
+checkpoint = torch.load(f='VikingNNsavedModel.pth.tar', map_location=torch.device(device))
+print(checkpoint['epoch'])
+print(checkpoint['BestAcc'])
+
+
+classifier.load_state_dict(checkpoint['model'])
 
 
 def testing(model, testDataLoader, lossFunction):
