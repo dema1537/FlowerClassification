@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-
+filename = "6hourRunv3.pth.tar"
 device = "cpu"
 
 if torch.cuda.is_available():
@@ -255,7 +255,7 @@ state = {
                 'BestAcc' : 0,
                 'optimiser' : optimiser.state_dict(),
             }
-torch.save(state, 'VikingNNsavedModel.pth.tar')
+torch.save(state, filename)
 
 
 
@@ -315,13 +315,13 @@ def validating(model, testDataLoader, lossFunction):
 
 
 
-        checkpoint = torch.load('VikingNNsavedModel.pth.tar')
+        checkpoint = torch.load(filename)
 
         accu = (checkpoint['BestAcc'])
 
         
 
-        if ((100 * correct) > accu) & ((100 * correct) > 40):
+        if ((100 * correct) > accu) & ((100 * correct) > 35):
             accu = (100 * correct)
             print("Saving....")
 
@@ -332,16 +332,16 @@ def validating(model, testDataLoader, lossFunction):
                 'optimiser' : optimiser.state_dict(),
             }
 
-            torch.save(state, 'VikingNNsavedModel.pth.tar')
+            torch.save(state, filename)
 
-            checkpoint = torch.load('VikingNNsavedModel.pth.tar')
+            checkpoint = torch.load(filename)
 
             print(checkpoint['BestAcc'])
 
-epochs = 1000
+epochs = 500
 
 startTime = time.time()
-runningTime = 11 * 60 * 60
+runningTime = 6 * 60 * 60
 
 
 
@@ -367,7 +367,7 @@ print("\n-\n-\n-\n-\n-\n-\n")
 print("Commencing testing with testing data loader")
 
 
-checkpoint = torch.load(f='VikingNNsavedModel.pth.tar', map_location=torch.device(device))
+checkpoint = torch.load(f=filename, map_location=torch.device(device))
 print(checkpoint['epoch'])
 print(checkpoint['BestAcc'])
 
