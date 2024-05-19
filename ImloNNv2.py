@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-filename = "8hourRunHigherDrop.pth.tar"
+filename = "6hourRunMoreTrans.pth.tar"
 device = "cpu"
 
 if torch.cuda.is_available():
@@ -103,10 +103,11 @@ Realtraining = datasets.Flowers102(
        
         #v2.RandomVerticalFlip(),
         v2.RandomRotation(45),
-        # v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
+        v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
         # v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
         v2.RandomAdjustSharpness(sharpness_factor=2),
-        v2.ElasticTransform(alpha=25.0),
+        v2.ElasticTransform(alpha=35.0),
+        v2.RandomApply([v2.RandomErasing(p=1.0)], p=0.5),
         v2.ToTensor(),
         v2.RandomPerspective(0.1, 0.5),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -341,7 +342,7 @@ def validating(model, testDataLoader, lossFunction):
 epochs = 500
 
 startTime = time.time()
-runningTime = 8 * 60 * 60
+runningTime = 6 * 60 * 60
 
 
 
