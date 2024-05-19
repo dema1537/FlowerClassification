@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-filename = "6hourRunv3.pth.tar"
+filename = "8hourRunHigherDrop.pth.tar"
 device = "cpu"
 
 if torch.cuda.is_available():
@@ -213,7 +213,7 @@ class CNN(nn.Module):
 
             nn.Linear(int(Nchannels), int(Nchannels * 2)),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.3),
 
 
             nn.Linear(int(Nchannels * 2), int(Nchannels/8)),
@@ -341,7 +341,7 @@ def validating(model, testDataLoader, lossFunction):
 epochs = 500
 
 startTime = time.time()
-runningTime = 6 * 60 * 60
+runningTime = 8 * 60 * 60
 
 
 
