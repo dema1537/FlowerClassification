@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-filename = "6hourRunMoreTrans.pth.tar"
+filename = "6hourRunLessTrans.pth.tar"
 device = "cpu"
 
 if torch.cuda.is_available():
@@ -93,7 +93,7 @@ testingDataLoader = DataLoader(testing, batch_size=batchSize)
 
 
 Realtraining = datasets.Flowers102(
-    root = "ImageData",
+    root = "ImageData", 
     split = "train",
     download = True,
     transform = v2.Compose([
@@ -101,15 +101,18 @@ Realtraining = datasets.Flowers102(
         v2.Resize((224,224), antialias=True),
         v2.RandomHorizontalFlip(),
        
-        #v2.RandomVerticalFlip(),
+        v2.RandomVerticalFlip(),
         v2.RandomRotation(45),
-        v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
+        v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
         # v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
         v2.RandomAdjustSharpness(sharpness_factor=2),
         v2.ElasticTransform(alpha=35.0),
+        v2.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=(0.8, 1.2), shear=10),
+        #v2.RandomGrayscale(p=0.1),
+
         v2.RandomApply([v2.RandomErasing(p=1.0)], p=0.5),
         v2.ToTensor(),
-        v2.RandomPerspective(0.1, 0.5),
+        #v2.RandomPerspective(0.1, 0.5),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     ]),
@@ -353,6 +356,8 @@ for t in range(epochs):
     if timeSoFar > runningTime:
         print("Time up, exiting training")
         break
+    else:
+        print(timeSoFar)
 
     print(f"Epoch {t+1}\n-------------------------------")
 
