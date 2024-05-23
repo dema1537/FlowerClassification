@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-filename = "6hourRunLessTrans.pth.tar"
+filename = "12hourRunLessTrans.pth.tar"
 device = "cpu"
 
 if torch.cuda.is_available():
@@ -345,7 +345,7 @@ def validating(model, testDataLoader, lossFunction):
 epochs = 500
 
 startTime = time.time()
-runningTime = 6 * 60 * 60
+runningTime = 12 * 60 * 60
 
 
 
