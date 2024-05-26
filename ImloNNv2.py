@@ -9,32 +9,21 @@ import scipy
 import matplotlib.pyplot as plt
 import time
 
+from torch.utils.data import DataLoader
+from sklearn.metrics import precision_score
 
-filename = "12hourRunLessTrans.pth.tar"
+
+filename = "CNN.pth.tar"
 device = "cpu"
 
-if torch.cuda.is_available():
-    print(f"GPU: {torch.cuda.get_device_name(0)} is available.")
-    device = "cuda"
+# if torch.cuda.is_available():
+#     print(f"GPU: {torch.cuda.get_device_name(0)} is available.")
+#     device = "cuda"
 
-else:
-    print("No GPU available. Training will run on CPU.")
+# else:
+#     print("No GPU available. Training will run on CPU.")
 
 
-
-# trainingData = datasets.Flowers102(
-#     root = "ImageData",
-#     split = "train",
-#     download = True,
-#     transform = v2.Compose([
-
-#         v2.Resize((224,224), antialias=True),
-#         v2.RandomHorizontalFlip(),
-#         v2.ToTensor(),
-#         #v2.Normalize(torch.Tensor(mean), torch.Tensor(std))
-
-#     ]),
-# )
 
 
 testing = datasets.Flowers102(
@@ -49,47 +38,11 @@ testing = datasets.Flowers102(
     ]),
 )
 
-# validation = datasets.Flowers102(
-#     root = "ImageData",
-#     split = "val",
-#     download = True,
-#         transform = v2.Compose([
-
-#         v2.Resize((224,224), antialias=True),
-#         v2.ToTensor(),
-
-#     ]),
-# )
-
-# print(testing)
-# print(testing)
-# print(validation)
 
 batchSize = 64
-dropOut = 0.5
 
-#trainDataLoader = DataLoader(trainingData, batch_size=batchSize, shuffle=True)
-testingDataLoader = DataLoader(testing, batch_size=batchSize)
-#validationDataLoader = DataLoader(validation, batch_size=batchSize)
-# def getMeanAndSTD():
-#     mean = 0
-#     std = 0
+testingDataLoader = DataLoader(testing, batch_size=batchSize, shuffle=False)
 
-#     totalImages = 0
-
-#     for images, _ in trainDataLoader:
-#         imageBatchCount = images.size(0)
-#         images = images.view(imageBatchCount, images.size(1), -1)
-#         mean += images.mean(2).sum(0)
-#         std += images.std(2).sum(0)
-#         totalImages += imageBatchCount
-
-#     mean /= totalImages
-#     std /= totalImages
-
-#     return mean, std
-
-# meanCalc, stdCalc = getMeanAndSTD()
 
 
 Realtraining = datasets.Flowers102(
@@ -99,24 +52,19 @@ Realtraining = datasets.Flowers102(
     transform = v2.Compose([
 
         v2.Resize((224,224), antialias=True),
-        v2.RandomHorizontalFlip(),
-       
+        v2.RandomHorizontalFlip(),    
         v2.RandomVerticalFlip(),
         v2.RandomRotation(45),
         v2.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
-        # v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
         v2.RandomAdjustSharpness(sharpness_factor=2),
-        v2.ElasticTransform(alpha=35.0),
-        v2.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=(0.8, 1.2), shear=10),
-        #v2.RandomGrayscale(p=0.1),
-
+        v2.ElasticTransform(alpha=25.0),
         v2.RandomApply([v2.RandomErasing(p=1.0)], p=0.5),
         v2.ToTensor(),
-        #v2.RandomPerspective(0.1, 0.5),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     ]),
 )
+
 
 Realvalidation = datasets.Flowers102(
     root = "ImageData",
@@ -124,7 +72,6 @@ Realvalidation = datasets.Flowers102(
     download = True,
         transform = v2.Compose([
         v2.Resize((224,224), antialias=True),
-
         v2.ToTensor(),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
@@ -152,61 +99,58 @@ class CNN(nn.Module):
         self.feature = nn.Sequential(
 
 
-            nn.Conv2d(3, 16, kernel_size=3, stride=1),
+            #1-16x224
+            nn.Conv2d(3, 16, kernel_size=3),
             nn.BatchNorm2d(16),
             nn.ReLU(),
 
-            
-
-            #874,496 224
-
+            #2
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
-            #112
 
+            #3-32x112
             nn.Conv2d(16, 32, 3),
             nn.BatchNorm2d(32),
             nn.ReLU(),
 
+
+            #4
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
-            #401,408 112
 
+            #5-64x56
             nn.Conv2d(32, 64, 3),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-
             
+
+            #6
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
-            #200,704 56
-
-
+            #7-128x28            
             nn.Conv2d(64, 128, 3),
             nn.BatchNorm2d(128),
             nn.ReLU(),
 
+            #8
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
-            #401,408 56
 
+            #9-256x14
             nn.Conv2d(128, 256, 3),
             nn.BatchNorm2d(256),
             nn.ReLU(),
 
-
-            #200,704 56
-
+            #10
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
 
             nn.Flatten(),
-           # nn.Dropout(0.25)
 
-
+            
         )
 
         Nchannels = self.feature(torch.empty(1, 3, 224, 224)).size(-1)
@@ -215,27 +159,29 @@ class CNN(nn.Module):
         self.classify = nn.Sequential(
 
 
+
+            #1
             nn.Linear(int(Nchannels), int(Nchannels * 2)),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.2),
 
 
+            #2
             nn.Linear(int(Nchannels * 2), int(Nchannels/8)),
             nn.ReLU(),
             nn.Dropout(0.5),
 
 
+            #3
             nn.Linear(int(Nchannels/8), int(Nchannels/8)),
             nn.ReLU(),
             nn.Dropout(0.5),
 
+
+            #4
             nn.Linear(int(Nchannels/8), int(102)),
 
         )
-
-
-
-
 
     def forward(self, x):
         features = self.feature(x)
@@ -248,16 +194,12 @@ classifier = CNN().to(device)
 
 lossFunction = nn.CrossEntropyLoss()
 
-
 optimiser = Adam(classifier.parameters(), lr=1e-4, weight_decay=1e-3)
-
-#optimiser = torch.optim.SGD(classifier.parameters(), lr=1e-2, weight_decay=1e-3)
 
 state = {
                 'epoch' : 0,
                 'model' : classifier.state_dict(),
                 'BestAcc' : 0,
-                'optimiser' : optimiser.state_dict(),
             }
 torch.save(state, filename)
 
@@ -270,9 +212,6 @@ def training(model, trainDataLoader, lossFunction, optimiser):
 
     for batch, (X,y) in enumerate(trainDataLoader):
 
-        if device == "cuda":
-            X,y = X.cuda(), y.cuda()
-
         prediction = model(X)
         loss = lossFunction(prediction, y)
 
@@ -280,11 +219,7 @@ def training(model, trainDataLoader, lossFunction, optimiser):
         loss.backward()
         optimiser.step()
 
-
-
         loss, current = loss.item(), batch * batchSize + len(X)
-
-
 
         print(f"loss: {loss:>7f}  [{current:>5d}/{len(trainDataLoader.dataset):>5d}]")
 
@@ -304,10 +239,6 @@ def validating(model, testDataLoader, lossFunction):
 
         for X, y in testDataLoader:
 
-            if device == "cuda":
-                X,y = X.cuda(), y.cuda()
-
-
             prediction = model(X)
             testLoss += lossFunction(prediction, y).item()
             correct += (prediction.argmax(1) == y).type(torch.float).sum().item()
@@ -325,7 +256,7 @@ def validating(model, testDataLoader, lossFunction):
 
         
 
-        if ((100 * correct) > accu) & ((100 * correct) > 35):
+        if ((100 * correct) > accu) & ((100 * correct) > 45):
             accu = (100 * correct)
             print("Saving....")
 
@@ -333,7 +264,6 @@ def validating(model, testDataLoader, lossFunction):
                 'epoch' : t,
                 'model' : classifier.state_dict(),
                 'BestAcc' : accu,
-                'optimiser' : optimiser.state_dict(),
             }
 
             torch.save(state, filename)
@@ -342,10 +272,10 @@ def validating(model, testDataLoader, lossFunction):
 
             print(checkpoint['BestAcc'])
 
-epochs = 500
+epochs = 300
 
 startTime = time.time()
-runningTime = 12 * 60 * 60
+runningTime = 11.5 * 60 * 60
 
 
 
@@ -394,10 +324,6 @@ def testing(model, testDataLoader, lossFunction):
 
         for X, y in testDataLoader:
 
-            if device == "cuda":
-                X,y = X.cuda(), y.cuda()
-
-
             prediction = model(X)
             testLoss += lossFunction(prediction, y).item()
             correct += (prediction.argmax(1) == y).type(torch.float).sum().item()
@@ -407,6 +333,8 @@ def testing(model, testDataLoader, lossFunction):
 
         print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {testLoss:>8f} \n")
 
+
+
 testing(classifier, testingDataLoader, lossFunction)
 
-print("Done")
+print(".......Done.......")
